@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Signal Processing Visualizer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #120a24;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #8b5cf6, #ec4899);
+      border-radius: 10px;
+    }
+    
+    :root {
+      --bg1: #0b0615;
+      --bg2: #1b0f2e;
+      --p: #8b5cf6;
+      --a: #ec4899;
+      --t: #f5f3ff;
+      --m: #c4b5fd;
+      --glass: rgba(255, 255, 255, 0.08);
+      --plot: #0a0714;
+      --grid: rgba(255, 255, 255, 0.12);
+    }
+    
+    * {
+      box-sizing: border-box;
+      font-family: Poppins, sans-serif;
+    }
+    
+    body {
+      margin: 0;
+      color: var(--t);
+      background: radial-gradient(circle at top, var(--bg2), var(--bg1));
+      position: relative;
+      overflow-x: hidden;
+    }
+    
+    #cursor-glow {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9998;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.5) 0%, rgba(236, 72, 153, 0.25) 40%, transparent 70%);
+      filter: blur(30px);
+      box-shadow: 0 0 50px rgba(139, 92, 246, 0.4), 0 0 100px rgba(236, 72, 153, 0.15);
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 28px;
+      background: linear-gradient(90deg, rgba(139, 92, 246, 0.18), rgba(236, 72, 153, 0.18));
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
+    }
+    
+    header h2 {
+      margin: 0;
+      background: linear-gradient(90deg, var(--p), var(--a));
+        background-clip: text;
+        -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+      font-size: 1.4rem;
+    }
+    
+    nav {
+      display: flex;
+    }
+    
+    nav a {
+      color: var(--m);
+      margin-left: 20px;
+      text-decoration: none;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+    
+    nav a:hover {
+      color: var(--p);
+      text-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
+    }
+    
+    nav a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--p), var(--a));
+      transition: width 0.3s ease;
+    }
+    
+    nav a:hover::after {
+      width: 100%;
+    }
+    
+    .hero {
+      min-height: 90vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
+    }
+    
+    .hero h1 {
+      font-size: 3.8rem;
+      background: linear-gradient(90deg, var(--p), var(--a));
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: float 3s ease-in-out infinite;
+      font-weight: 700;
+    }
+    
+    .hero p {
+      font-size: 1.1rem;
+      margin: 20px 0;
+      color: var(--m);
+    }
+    
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-15px);
+      }
+    }
+    
+    .btn {
+      padding: 14px 30px;
+      border-radius: 40px;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      background: linear-gradient(90deg, var(--p), var(--a));
+      position: relative;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+      overflow: hidden;
+    }
+    
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.6s;
+    }
+    
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 40px rgba(139, 92, 246, 0.6);
+    }
+    
+    .btn:hover::before {
+      left: 100%;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .wrap {
+      max-width: 1350px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    
+    .wrap h3 {
+      color: var(--t);
+      font-size: 1.8rem;
+      margin-top: 0;
+      background: linear-gradient(90deg, var(--p), var(--a));
+        background-clip: text;
+        -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+    }
+    
+    .card {
+      background: var(--glass);
+      border-radius: 22px;
+      backdrop-filter: blur(14px);
+      padding: 22px;
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+      border-color: rgba(139, 92, 246, 0.4);
+      box-shadow: 0 12px 48px rgba(139, 92, 246, 0.2);
+    }
+    
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+    
+    .dark {
+      background: #120a24;
+      color: var(--t);
+      border: 1.5px solid rgba(139, 92, 246, 0.45);
+      border-radius: 18px;
+      padding: 10px 14px;
+      transition: all 0.3s ease;
+      font-size: 0.95rem;
+    }
+    .dark select, .dark {
+      background: #120a24;
+      color: var(--t);
+    }
+    .dark option {
+      background: #120a24;
+      color: var(--t);
+    }
+    
+    .dark:focus {
+      outline: none;
+      border-color: var(--p);
+      box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+      background: rgba(139, 92, 246, 0.1);
+    }
+    
+    .dark:hover {
+      border-color: rgba(139, 92, 246, 0.7);
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+    }
+    
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .field label {
+      font-size: 0.8rem;
+      color: var(--m);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+    
+    @media (max-width: 1024px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .plot-card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+      border-radius: 20px;
+      padding: 16px;
+      border: 1px solid rgba(139, 92, 246, 0.15);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+    }
+    
+    .plot-card:hover {
+      border-color: rgba(139, 92, 246, 0.3);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+      box-shadow: 0 12px 36px rgba(139, 92, 246, 0.15);
+    }
+    
+    .plot-header {
+      font-weight: 600;
+      color: var(--m);
+      border-bottom: 2px solid rgba(139, 92, 246, 0.3);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      font-size: 0.9rem;
+      letter-spacing: 0.5px;
+        background-clip: text;
+        -webkit-background-clip: text;
+    }
+    
+    .plot-inner {
+      background: var(--plot);
+      border-radius: 12px;
+      padding: 6px;
+      border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+    
+    canvas {
+      width: 100%;
+      height: 280px;
+      border-radius: 8px;
+    }
+    
+    footer {
+      text-align: center;
+      color: var(--m);
+      padding: 24px;
+      border-top: 1px solid rgba(139, 92, 246, 0.2);
+      margin-top: 40px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="cursor-glow"></div>
+  
+  <header>
+    <h2 style="cursor:pointer;" onclick="show('home')">Signal Visualizer</h2>
+    <nav>
+      <a onclick="show('home')">Home</a>
+      <a onclick="show('project')">Project</a>
+      <a onclick="show('team')">Team</a>
+    </nav>
+  </header>
+
+  <section id="home" class="hero">
+    <div>
+      <h1>Signal Processing Visualizer</h1>
+      <p style="color:var(--m)">High-clarity time & frequency domain analysis with noise and filtering</p>
+      <button class="btn" onclick="show('project')">View Project</button>
+    </div>
+  </section>
+
+  <section id="project" class="hidden">
+    <div class="wrap card" style="text-align: center;">
+      <h3>Select Your Task</h3>
+      <p style="color:var(--m);margin-bottom:40px;">Choose what you would like to do:</p>
+      <div style="display: flex; gap: 40px; justify-content: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 250px; padding: 30px; border: 2px solid rgba(139, 92, 246, 0.3); border-radius: 18px; background: rgba(139, 92, 246, 0.05);">
+          <h4 style="color: var(--p); font-size: 1.3rem; margin-top: 0;">Signal Generator</h4>
+          <p style="color: var(--m); margin: 15px 0;">Create synthetic signals with different waveforms, add noise, and apply filters in real-time.</p>
+          <button class="btn" onclick="show('signal-gen')">Generate Signal</button>
+        </div>
+        <div style="flex: 1; min-width: 250px; padding: 30px; border: 2px solid rgba(236, 72, 153, 0.3); border-radius: 18px; background: rgba(236, 72, 153, 0.05);">
+          <h4 style="color: var(--a); font-size: 1.3rem; margin-top: 0;">Audio Analyzer</h4>
+          <p style="color: var(--m); margin: 15px 0;">Upload your own .wav files and analyze them with AI-powered filter recommendations.</p>
+          <button class="btn" onclick="show('audio-upload')">Upload Audio</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="signal-gen" class="hidden">
+    <div class="wrap card">
+      <h3>Signal Analysis Workspace</h3>
+      <div class="controls">
+
+  <select id="sig" class="dark">
+    <option>sine</option>
+    <option>square</option>
+    <option>triangle</option>
+  </select>
+
+  <select id="filt" class="dark">
+    <option value="none">No Filter</option>
+    <option value="lp">Low Pass</option>
+    <option value="hp">High Pass</option>
+    <option value="bp">Band Pass</option>
+  </select>
+
+  <div class="field">
+    <label>Frequency (Hz)</label>
+    <input id="freq" class="dark" value="5">
+  </div>
+
+  <div class="field">
+    <label>Noise Level</label>
+    <input id="noise" type="range" min="0" max="1" step="0.05" value="0">
+  </div>
+
+  <div id="band" class="controls hidden">
+    <div class="field">
+      <label>Low Cut (Hz)</label>
+      <input id="lo" class="dark" value="3">
+    </div>
+    <div class="field">
+      <label>High Cut (Hz)</label>
+      <input id="hi" class="dark" value="15">
+    </div>
+  </div>
+
+  <button class="btn" onclick="run()">Run</button>
+  <p id="aiSuggestionProj" style="color:var(--m);margin-top:12px;"></p>
+  <p id="snrInfo" style="color:#34d399;font-weight:600;"></p>
+  <button class="btn" id="applyRecBtnProj" style="display:none; margin-left:8px;">Apply Filter</button>
+  <button class="btn" id="resetBtnProj" style="margin-left:8px;">Reset</button>
+</div>
+
+      <div class="grid">
+        <div class="plot-card">
+          <div class="plot-header">Original Signal (Time)</div>
+          <div class="plot-inner"><canvas id="t0" width="1600" height="500"></canvas></div>
+        </div>
+        <div class="plot-card">
+          <div class="plot-header">Original Spectrum (FFT)</div>
+          <div class="plot-inner"><canvas id="f0" width="1600" height="500"></canvas></div>
+        </div>
+        <div class="plot-card">
+          <div class="plot-header">Filtered Signal (Time)</div>
+          <div class="plot-inner"><canvas id="t1" width="1600" height="500"></canvas></div>
+        </div>
+        <div class="plot-card">
+          <div class="plot-header">Filtered Spectrum (FFT)</div>
+          <div class="plot-inner"><canvas id="f1" width="1600" height="500"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="audio-upload" class="hidden">
+    <div class="wrap card">
+      <h3>Upload & Analyse Audio</h3>
+      <div class="controls">
+        <div class="field">
+          <label>Upload Audio (.wav)</label>
+          <input type="file" id="audioFile" class="dark" accept=".wav">
+        </div>
+
+        <select id="filtAudio" class="dark">
+          <option value="none">No Filter</option>
+          <option value="lp">Low Pass</option>
+          <option value="hp">High Pass</option>
+          <option value="bp">Band Pass</option>
+        </select>
+
+        <div id="bandAudio" class="controls hidden">
+          <div class="field">
+            <label>Low Cut (Hz)</label>
+            <input id="loAudio" class="dark" value="50">
+          </div>
+          <div class="field">
+            <label>High Cut (Hz)</label>
+            <input id="hiAudio" class="dark" value="200">
+          </div>
+        </div>
+
+        <button class="btn" id="applyManualFilterBtn" style="margin-left:8px;">Apply Filter</button>
+        <p id="aiSuggestion" style="color:var(--m);margin-top:12px;"></p>
+        <button class="btn" id="applyRecBtn" style="display:none;margin-left:8px;">Apply Recommended Filter</button>
+        <button class="btn" id="resetBtnAudio" style="margin-left:8px;">Reset</button>
+      </div>
+
+      <div class="grid">
+        <div class="plot-card">
+          <div class="plot-header">Original Signal (Time)</div>
+          <div class="plot-inner"><canvas id="t0a" width="1600" height="500"></canvas></div>
+        </div>
+        <div class="plot-card">
+          <div class="plot-header">Original Spectrum (FFT)</div>
+          <div class="plot-inner"><canvas id="f0a" width="1600" height="500"></canvas></div>
+        </div>
+        <div class="plot-card">
+          <div class="plot-header">Filtered Signal (Time)</div>
+          <div class="plot-inner"><canvas id="t1a" width="1600" height="500"></canvas></div>
+        </div>
+        <div class="plot-card">
+          <div class="plot-header">Filtered Spectrum (FFT)</div>
+          <div class="plot-inner"><canvas id="f1a" width="1600" height="500"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="team" class="hidden">
+    <div class="wrap card">
+      <h3>Project Team</h3>
+      <p>Satyajeet Sachin Pawar</p>
+      <p>Pranit Nitin Bhosale</p>
+      <p>Vidyut Ganesh Subramanian</p>
+      <p>Sharvesh B</p>
+      <p>Surya H</p>
+    </div>
+  </section>
+
+  <footer>© 2026 Signal Processing Visualizer</footer>
+
+  <script>
+    // Cursor glow effect
+    const cursorGlow = document.getElementById('cursor-glow');
+    document.addEventListener('mousemove', (e) => {
+      cursorGlow.style.left = e.clientX + 'px';
+      cursorGlow.style.top = e.clientY + 'px';
+      cursorGlow.style.opacity = '1';
+    });
+    document.addEventListener('mouseleave', () => {
+      cursorGlow.style.opacity = '0';
+    });
+
+    function show(id) {
+      ['home', 'project', 'signal-gen', 'audio-upload', 'team'].forEach(s => document.getElementById(s).classList.add('hidden'));
+      // clear any lingering AI suggestions and hide apply buttons
+      const p1 = document.getElementById('aiSuggestionProj');
+      if (p1) p1.innerText = '';
+      const p2 = document.getElementById('aiSuggestion');
+      if (p2) p2.innerText = '';
+      const b1 = document.getElementById('applyRecBtnProj');
+      if (b1) b1.style.display = 'none';
+      const b2 = document.getElementById('applyRecBtn');
+      if (b2) b2.style.display = 'none';
+      document.getElementById(id).classList.remove('hidden')
+    }
+
+    filt.onchange = () => band.classList.toggle('hidden', filt.value !== 'bp');
+
+    function grid(c) {
+      let W = c.canvas.width, H = c.canvas.height;
+      c.strokeStyle = 'rgba(255,255,255,.12)';
+      c.lineWidth = 1;
+      for (let i = 1; i < 6; i++) {
+        c.beginPath();
+        c.moveTo(0, H * i / 6);
+        c.lineTo(W, H * i / 6);
+        c.stroke();
+        c.beginPath();
+        c.moveTo(W * i / 6, 0);
+        c.lineTo(W * i / 6, H);
+        c.stroke();
+      }
+      c.strokeStyle = 'rgba(255,255,255,.25)';
+      c.beginPath();
+      c.moveTo(0, H / 2);
+      c.lineTo(W, H / 2);
+      c.stroke();
+    }
+
+    function gen(s, f, n, fs = 1500) {
+      let x = [];
+      for (let i = 0; i < fs; i++) {
+        let t = i / fs, v = 0;
+        if (s === 'sine') v = Math.sin(2 * Math.PI * f * t);
+        else if (s === 'square') v = Math.sign(Math.sin(2 * Math.PI * f * t));
+        else v = 2 * Math.abs(2 * (t * f - Math.floor(.5 + t * f))) - 1;
+        v += n * (Math.random() * 2 - 1);
+        x.push(v);
+      }
+      return x;
+    }
+
+    function lp(x) {
+      return x.map((v, i) => i ? 0.9 * x[i - 1] + 0.1 * v : v)
+    }
+
+    function hp(x) {
+      return x.map((v, i) => i ? v - x[i - 1] : 0)
+    }
+
+    function fft(x) {
+      let N = x.length, m = [];
+      for (let k = 0; k < N / 2; k++) {
+        let re = 0, im = 0;
+        for (let n = 0; n < N; n++) {
+          re += x[n] * Math.cos(2 * Math.PI * k * n / N);
+          im -= x[n] * Math.sin(2 * Math.PI * k * n / N);
+        }
+        m.push(Math.log10(Math.sqrt(re * re + im * im) + 1));
+      }
+      return m;
+    }
+
+    function bp(x, lo, hi, fs = 1500) {
+      let N = x.length, re = [], im = [];
+      for (let k = 0; k < N; k++) {
+        re[k] = 0;
+        im[k] = 0;
+        for (let n = 0; n < N; n++) {
+          re[k] += x[n] * Math.cos(2 * Math.PI * k * n / N);
+          im[k] -= x[n] * Math.sin(2 * Math.PI * k * n / N);
+        }
+        let f = k * fs / N;
+        if (f < lo || f > hi) {
+          re[k] = 0;
+          im[k] = 0
+        }
+      }
+      let y = [];
+      for (let n = 0; n < N; n++) {
+        let s = 0;
+        for (let k = 0; k < N; k++) s += re[k] * Math.cos(2 * Math.PI * k * n / N) - im[k] * Math.sin(2 * Math.PI * k * n / N);
+        y.push(s / N);
+      }
+      return y;
+    }
+
+    function draw(id, d, color) {
+      let c = document.getElementById(id).getContext('2d'), W = c.canvas.width, H = c.canvas.height;
+      c.clearRect(0, 0, W, H);
+      grid(c);
+      c.strokeStyle = color;
+      c.lineWidth = 3;
+      c.beginPath();
+      d.forEach((v, i) => {
+        let x = i * W / d.length, y = H / 2 - v * (H * .35);
+        i ? c.lineTo(x, y) : c.moveTo(x, y)
+      });
+      c.stroke();
+    }
+
+    ['t0', 't1', 'f0', 'f1'].forEach(id => grid(document.getElementById(id).getContext('2d')));
+    ['t0a', 't1a', 'f0a', 'f1a'].forEach(id => grid(document.getElementById(id).getContext('2d')));
+
+    function run() {
+      fetch("/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          signal: sig.value,
+          freq: freq.value,
+          noise: noise.value,
+          filter: filt.value,
+          lo: lo.value,
+          hi: hi.value
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          draw('t0', data.time_original, '#60a5fa');
+          draw('t1', data.time_filtered, '#34d399');
+          draw('f0', data.fft_original, '#f472b6');
+          draw('f1', data.fft_filtered, '#a78bfa');
+          const sugEl = document.getElementById("aiSuggestionProj");
+          sugEl.innerText = "Suggested Filter: " + data.recommendation;
+          document.getElementById("snrInfo").innerText =
+          "SNR Before: " + data.snr_before.toFixed(2) +
+          "dB | After: " + data.snr_after.toFixed(2) + " dB";
+          document.getElementById("applyRecBtnProj").style.display = 'inline-block';
+        });
+    }
+    // upload handling (used on audio page)
+    let lastUploadFile = null;
+    document.getElementById("audioFile").addEventListener("change", function() {
+      if (!this.files.length) return;
+      lastUploadFile = this.files[0];
+      sendUpload();
+    });
+
+    function sendUpload(filter=null, lo=0, hi=0) {
+      if (!lastUploadFile) return;
+      const formData = new FormData();
+      formData.append("file", lastUploadFile);
+      if (filter) {
+        formData.append("filter", filter);
+        formData.append("lo", lo);
+        formData.append("hi", hi);
+      }
+      fetch("/upload", {
+        method: "POST",
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        draw('t0a', data.time_original, '#60a5fa');
+        draw('t1a', data.time_filtered, '#34d399');
+        draw('f0a', data.fft_original, '#f472b6');
+        draw('f1a', data.fft_filtered, '#a78bfa');
+        document.getElementById("aiSuggestion").innerText = "AI Suggestion: " + data.recommendation;
+        document.getElementById("applyRecBtn").style.display = 'inline-block';
+      })
+      .catch(err => console.error("Upload error:", err));
+    }
+
+    document.getElementById("applyRecBtn").addEventListener("click", () => {
+      const text = document.getElementById("aiSuggestion").innerText;
+      let filtType = 'none', lo=0, hi=0;
+      if (text.includes("Low Pass")) filtType = 'lp';
+      else if (text.includes("High Pass")) filtType = 'hp';
+      else {
+        filtType = 'bp';
+        lo = parseFloat(document.getElementById("loAudio").value) || 50;
+        hi = parseFloat(document.getElementById("hiAudio").value) || 200;
+      }
+      // update manual controls so user sees the chosen filter
+      document.getElementById("filtAudio").value = filtType;
+      document.getElementById("bandAudio").classList.toggle('hidden', filtType !== 'bp');
+      sendUpload(filtType, lo, hi);
+    });
+
+    document.getElementById("applyRecBtnProj").addEventListener("click", () => {
+      const text = document.getElementById("aiSuggestionProj").innerText;
+      if (text.includes("Low Pass")) filt.value = 'lp';
+      else if (text.includes("High Pass")) filt.value = 'hp';
+      else filt.value = 'bp';
+      run();
+    });
+
+    // Audio section filter handling
+    document.getElementById("filtAudio").addEventListener("change", function() {
+      document.getElementById("bandAudio").classList.toggle('hidden', this.value !== 'bp');
+    });
+
+    document.getElementById("applyManualFilterBtn").addEventListener("click", () => {
+      const filtType = document.getElementById("filtAudio").value;
+      if (filtType === 'none') {
+        sendUpload();
+      } else {
+        let lo = 0, hi = 0;
+        if (filtType === 'bp') {
+          lo = parseFloat(document.getElementById("loAudio").value) || 50;
+          hi = parseFloat(document.getElementById("hiAudio").value) || 200;
+        }
+        sendUpload(filtType, lo, hi);
+      }
+    });
+
+    document.getElementById("resetBtnProj").addEventListener("click", () => {
+      // Reset form controls
+      sig.value = 'sine';
+      freq.value = '5';
+      noise.value = '0';
+      filt.value = 'none';
+      lo.value = '3';
+      hi.value = '15';
+      band.classList.add('hidden');
+      document.getElementById("aiSuggestionProj").innerText = '';
+      document.getElementById("applyRecBtnProj").style.display = 'none';
+      // Clear canvases
+      ['t0', 't1', 'f0', 'f1'].forEach(id => {
+        let c = document.getElementById(id).getContext('2d');
+        c.clearRect(0, 0, c.canvas.width, c.canvas.height);
+        grid(c);
+      });
+    });
+
+    document.getElementById("resetBtnAudio").addEventListener("click", () => {
+      // Reset file input and state
+      lastUploadFile = null;
+      document.getElementById("audioFile").value = '';
+      document.getElementById("filtAudio").value = 'none';
+      document.getElementById("loAudio").value = '50';
+      document.getElementById("hiAudio").value = '200';
+      document.getElementById("bandAudio").classList.add('hidden');
+      document.getElementById("aiSuggestion").innerText = '';
+      document.getElementById("applyRecBtn").style.display = 'none';
+      // Clear canvases
+      ['t0a', 't1a', 'f0a', 'f1a'].forEach(id => {
+        let c = document.getElementById(id).getContext('2d');
+        c.clearRect(0, 0, c.canvas.width, c.canvas.height);
+        grid(c);
+      });
+    });
+  </script>
+</body>
+</html>

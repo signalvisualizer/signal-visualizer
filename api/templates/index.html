@@ -764,7 +764,7 @@
       document.getElementById("bandAudio").classList.add('hidden');
       document.getElementById("aiSuggestion").innerText = '';
       document.getElementById("applyRecBtn").style.display = 'none';
-      document.getElementById("snrInfo").innerText = '';
+      document.getElementById("snrInfo").textContent ="SNR Before: -- dB | After: -- dB";
       // Clear canvases
       ['t0a', 't1a', 'f0a', 'f1a'].forEach(id => {
         let c = document.getElementById(id).getContext('2d');

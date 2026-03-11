@@ -194,7 +194,9 @@ def process():
         "snr_before": snr_before,
         "snr_after": snr_after
     })
-
+@app.route("/ping")
+def ping():
+    return "alive"
 import os
 
 if __name__ == "__main__":

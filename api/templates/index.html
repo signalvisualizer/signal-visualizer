@@ -746,6 +746,7 @@
       band.classList.add('hidden');
       document.getElementById("aiSuggestionProj").innerText = '';
       document.getElementById("applyRecBtnProj").style.display = 'none';
+      document.getElementById("snrInfo").textContent ="SNR Before: -- dB | After: -- dB";
       // Clear canvases
       ['t0', 't1', 'f0', 'f1'].forEach(id => {
         let c = document.getElementById(id).getContext('2d');

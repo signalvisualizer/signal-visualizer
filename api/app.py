@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 import numpy as np
 from scipy.io import wavfile
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")
 FS = 1500
 
 def generate_signal(sig_type, freq, noise):

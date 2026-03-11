@@ -686,7 +686,7 @@
         draw('t1a', data.time_filtered, '#34d399');
         draw('f0a', data.fft_original, '#f472b6');
         draw('f1a', data.fft_filtered, '#a78bfa');
-        document.getElementById("aiSuggestion").innerText = "AI Suggestion: " + data.recommendation;
+        document.getElementById("aiSuggestion").innerText = "Suggested Filter:" + data.recommendation;
         document.getElementById("applyRecBtn").style.display = 'inline-block';
       })
       .catch(err => console.error("Upload error:", err));
